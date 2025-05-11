@@ -2,140 +2,144 @@
 
 This repository contains a C program that allows users to:
 
-- Input a regular grammar and number of productions.
+- Read a user-defined grammar from a file.
 - Automatically compute FIRST and FOLLOW sets for non-terminals.
 - Construct the LL(1) parsing table.
 - Parse input strings and simulate step-by-step LL(1) parsing actions.
 - Determine whether the input string is accepted or rejected.
 
----
-
-## 🧾 Features
-
-- Input grammar using the form: `A=B`  
-- Displays:
-  - FIRST and FOLLOW sets
-  - LL(1) parsing table
-  - Parsing steps
-- Accepts/rejects strings based on the parsing result
-- Includes sample test cases and output
+*Note:* The grammar must be in LL(1) format—i.e., free from left recursion and ambiguity.
 
 ---
+## **Assumptions**
 
-## ⚙️ Usage Instructions
+* Grammar must be LL(1) (no left recursion or conflicts).
+* Grammar must be in the format:
 
-1. Enter the number of productions.
-2. Input each production in the form `A=B`, where:
-   - `A` is a single uppercase non-terminal.
-   - `B` is a sequence of terminals and non-terminals.
-3. Input string must end with `$`.
+  ```
+  A->b|c|Db
+  B->d|#
+  ```
+* Use `#` to denote epsilon (ε).
+* Use `->` to separate LHS and RHS.
+* Multiple productions must be combined using \`|` on the same line.
+* Each production line must end with a newline.
+* File must end with a **blank line** (an empty newline).
+
+**Important Notes:**
+
+* **Do not use `-` or `>`** in terminals.
+* Non-terminals must be single uppercase letters (A-Z).
+* Terminals must be single characters and not uppercase letters.
+* Input strings must contain **only terminals** followed by `$`.
 
 ---
+## **Test Case**
 
-## 📌 Assumptions
-
-1. Epsilon (ε) is represented by `#`.
-2. Productions must follow the format `A=B`, one per line.
-3. The LHS of the **first** production is treated as the start symbol.
-4. Grammar must **not** be left-recursive.
-5. Only **uppercase letters** are considered non-terminals.
-6. All other characters are considered terminals.
-7. **`!`** and **`$`** are reserved for internal use.
-8. Input strings must **end with `$`**.
-
----
-
-## 🔍 Sample Test Case
-
-**Input:**
+### Sample `grammer.txt`:
 
 ```
-How many productions ? :8
+E->TA
+A->+TA|#
+T->FB
+B->*FB|#
+F->(E)|i
+```
 
-Enter 8 productions in form A=B where A and B are grammar symbols :
+> Note: Make sure to add a **blank line** at the end of the file.
 
-E=TR
+### Input:
 
-R=+TR
+```
+i+i*i$
+```
 
-R=#
+### Output:
 
-T=FY
+```
+E->TA
+A->+TA|#
+T->FB
+B->*FB|#
+F->(E)|i
 
-Y=*FY
+FIRST OF E: ( i
+FIRST OF A: # +
+FIRST OF T: ( i
+FIRST OF B: # *
+FIRST OF F: ( i
 
-Y=#
+FOLLOW OF E: $ )
+FOLLOW OF A: $ )
+FOLLOW OF T: $ ) +
+FOLLOW OF B: $ ) +
+FOLLOW OF F: $ ) * +
 
-F=(E)
-
-F=i
-
-----------------------------------------------
- First(E)= { (, i, }
-
- First(R)= { +, #, }
-
- First(T)= { (, i, }
-
- First(Y)= { *, #, }
-
- First(F)= { (, i, }
-
------------------------------------------------
-
- Follow(E) = { $, ),  }
-
- Follow(R) = { $, ),  }
-
- Follow(T) = { +, $, ),  }
-
- Follow(Y) = { +, $, ),  }
-
- Follow(F) = { *, +, $, ),  }
+FIRST OF E->TA: ( i
+FIRST OF A->+TA: +
+FIRST OF A->#: #
+FIRST OF T->FB: ( i
+FIRST OF B->*FB: *
+FIRST OF B->#: #
+FIRST OF F->(E): (
+FIRST OF F->i: i
 
 
-                              The LL(1) Parsing Table for the above grammer :-
-                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-      ======================================================================================================
-              |       +               *               (               )               i               $
-      ======================================================================================================
-         E    |                                       E=TR                            E=TR
-      ------------------------------------------------------------------------------------------------------
-         R    |       R=+TR                                           R=#                             R=#
-      ------------------------------------------------------------------------------------------------------
-         T    |                                       T=FY                            T=FY
-      ------------------------------------------------------------------------------------------------------
-         Y    |       Y=#             Y=*FY                           Y=#                             Y=#
-      ------------------------------------------------------------------------------------------------------
-         F    |                                       F=(E)                           F=i
-      ------------------------------------------------------------------------------------------------------
+        **************** LL(1) PARSING TABLE *******************
+        --------------------------------------------------------
+          $         (         )         *         +         i
+E                   E->TA                                   E->TA
+A         A->#                A->#                A->+TA
+T                   T->FB                                   T->FB
+B         B->#                B->#      B->*FB    B->#
+F                   F->(E)                                  F->i
 
 
 Please enter the desired INPUT STRING = i+i*i$
 
-                    ===========================================================================
-                            Stack                   Input                   Action
-                    ===========================================================================
-                            $E                      i+i*i$                  E=TR
-                            $RT                     i+i*i$                  T=FY
-                            $RYF                    i+i*i$                  F=i
-                            $RYi                    i+i*i$                  POP ACTION
-                            $RY                     +i*i$                   Y=#
-                            $R                      +i*i$                   R=+TR
-                            $RT+                    +i*i$                   POP ACTION
-                            $RT                     i*i$                    T=FY
-                            $RYF                    i*i$                    F=i
-                            $RYi                    i*i$                    POP ACTION
-                            $RY                     *i$                     Y=*FY
-                            $RYF*                   *i$                     POP ACTION
-                            $RYF                    i$                      F=i
-                            $RYi                    i$                      POP ACTION
-                            $RY                     $                       Y=#
-                            $R                      $                       R=#
-                            $                       $                       POP ACTION
+                ===================================================================
+                        Stack                   Input                   Action
+                ===================================================================
+                        $E                      i+i*i$                  E->TA
+                        $AT                     i+i*i$                  T->FB
+                        $ABF                    i+i*i$                  F->i
+                        $ABi                    i+i*i$                  POP
+                        $AB                     +i*i$                   Epslon production is added
+                        $A                      +i*i$                   A->+TA
+                        $AT+                    +i*i$                   POP
+                        $AT                     i*i$                    T->FB
+                        $ABF                    i*i$                    F->i
+                        $ABi                    i*i$                    POP
+                        $AB                     *i$                     B->*FB
+                        $ABF*                   *i$                     POP
+                        $ABF                    i$                      F->i
+                        $ABi                    i$                      POP
+                        $AB                     $                       Epslon production is added
+                        $A                      $                       Epslon production is added
+                        $                       $                       POP
 
-            =======================================================================================
-                                            YOUR STRING HAS BEEN ACCEPTED !!
-            =======================================================================================
+                        ================================================
+                                 YOUR STRING HAS BEEN ACCEPTED !
+                        ================================================
+
+
 ```
+
+---
+
+## **How to Run**
+
+1. **Write grammar** in `grammer.txt` (example provided above).
+2. Ensure there's a **blank line** at the end of the file.
+3. Run:
+
+   ```
+   make
+   ```
+4. The program will:
+
+   * Compile and run
+   * Display FIRST, FOLLOW, Parsing Table
+   * Ask for input string (like `i+i*i$`)
+5. It will show step-by-step parsing and whether the string is accepted or rejected.
+
